@@ -6,7 +6,9 @@ import sg.banking.kata.katasgbanking.Exception.TransactionException;
 
 public interface TransactionService {
     String NOT_ALLOWED_AMOUNT = "Amount must be greater than zero";
-    String ACCOUNT_NOT_FOUND_EXCEPTION_MESSAGE = "Account not found";
+    String INSUFFICIENT_BALANCE   = "Insufficient balance";
 
     TransactionDTO deposit(Long accountId, TransactionDTO transactionDTO ) throws AccountNotFoundException, TransactionException;
+    TransactionDTO withdrawal(Long accountId, TransactionDTO transactionDTO) throws AccountNotFoundException, TransactionException;
+
 }

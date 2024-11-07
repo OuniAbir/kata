@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import sg.banking.kata.katasgbanking.Enum.TransactionType;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,7 +14,7 @@ import java.util.Date;
 @Builder
 public class TransactionDTO {
     private Long id;
-    private Date transactionDate;
+    private LocalDateTime transactionDate;
     private double amount;
     private double balance;
     private TransactionType transactionType;

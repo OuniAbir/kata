@@ -1,4 +1,4 @@
-package sg.banking.kata.katasgbanking.Service;
+package sg.banking.kata.katasgbanking.unit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +11,7 @@ import sg.banking.kata.katasgbanking.Exception.TransactionException;
 import sg.banking.kata.katasgbanking.Mapper.TransactionMapper;
 import sg.banking.kata.katasgbanking.Repository.AccountRepository;
 import sg.banking.kata.katasgbanking.Repository.TransactionRepository;
+import sg.banking.kata.katasgbanking.Service.TransactionServiceImpl;
 import sg.banking.kata.katasgbanking.entities.Account;
 import sg.banking.kata.katasgbanking.entities.Transaction;
 
@@ -29,6 +30,7 @@ public class TransactionServiceTest {
 
     @Mock
     private TransactionMapper transactionMapper;
+
     private Account account;
     private TransactionDTO transactionDTO;
     private Transaction transaction;
@@ -80,14 +82,15 @@ public class TransactionServiceTest {
     void shouldThrowExceptionForInvalidDepositAmount() {
 
         when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
-        transactionDTO.setAmount(0);
+
         // Test for zero amount
+        transactionDTO.setAmount(0);
         assertThrows(TransactionException.class, () ->
                 transactionService.deposit(1L, transactionDTO)
         );
-        transactionDTO.setAmount(-1);
 
         // Test for negative amount
+        transactionDTO.setAmount(-1);
         assertThrows(TransactionException.class, () ->
                 transactionService.deposit(1L, transactionDTO)
         );
@@ -97,6 +100,33 @@ public class TransactionServiceTest {
 
         // Ensure the account balance remains unchanged
         assertEquals(100.0, account.getBalance());
+    }
+
+    @Test
+    void shouldWithdrawSuccessfully() throws TransactionException, AccountNotFoundException {
+
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+
+        when(transactionMapper.toEntity(transactionDTO)).thenReturn(transaction);
+        when(transactionRepository.save(transaction)).thenReturn(transaction);
+        when(transactionMapper.toDto(transaction)).thenReturn(transactionDTO);
+
+        TransactionDTO result = transactionService.withdrawal(1L, transactionDTO);
+
+        assertEquals(50.0, account.getBalance());
+        assertNotNull(result);
+    }
+
+
+    @Test
+    void shouldThrowInsufficientFundsExceptionWhenBalanceIsLow() {
+        account.setBalance(30.0); // Setting the balance to 30, which is less than the withdrawal amount
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+
+        assertThrows(TransactionException.class, () -> transactionService.withdrawal(1L, transactionDTO));
+
+        // Verify that the mapper was never called in this case (since withdrawal failed)
+        verify(transactionMapper, never()).toEntity(transactionDTO);
     }
 
 }

@@ -31,21 +31,23 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public TransactionDTO deposit(Long accountId, TransactionDTO transactionDTO) throws AccountNotFoundException, TransactionException {
         Account foundAccount = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountNotFoundException(ACCOUNT_NOT_FOUND_EXCEPTION_MESSAGE));
+                .orElseThrow(() -> new AccountNotFoundException(AccountService.ACCOUNT_NOT_FOUND_EXCEPTION_MESSAGE));
 
         if (transactionDTO.getAmount() <= 0) {
             throw new TransactionException(NOT_ALLOWED_AMOUNT);
         }
 
+        double newBalance = foundAccount.getBalance() + transactionDTO.getAmount();
         // Create a DepositTransaction
         Transaction transaction = transactionMapper.toEntity(transactionDTO);
         transaction.setTransactionType(TransactionType.DEPOSIT);
         transaction.setAccount(foundAccount);
         transaction.setAmount(transactionDTO.getAmount());
         transaction.setTransactionDate(java.time.LocalDateTime.now());
+        transaction.setBalance(newBalance);
 
         foundAccount.getTransactions().add(transaction);
-        foundAccount.setBalance( foundAccount.getBalance() + transactionDTO.getAmount() );
+        foundAccount.setBalance(newBalance);
 
         // Save the transaction
         transactionRepository.save(transaction);
@@ -56,4 +58,39 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
 
+    @Transactional
+    public TransactionDTO withdrawal(Long accountId, TransactionDTO transactionDTO) throws AccountNotFoundException, TransactionException {
+        Account foundAccount = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(AccountService.ACCOUNT_NOT_FOUND_EXCEPTION_MESSAGE));
+
+        if (transactionDTO.getAmount() <= 0) {
+            throw new TransactionException(NOT_ALLOWED_AMOUNT);
+        }
+
+        // Ensure sufficient balance
+        if (foundAccount.getBalance() < transactionDTO.getAmount()) {
+            throw new TransactionException(INSUFFICIENT_BALANCE);
+        }
+
+        double newBalance = foundAccount.getBalance() - transactionDTO.getAmount();
+
+
+        // Create a DepositTransaction
+        Transaction transaction = transactionMapper.toEntity(transactionDTO);
+        transaction.setTransactionType(TransactionType.WITHDRAWAL);
+        transaction.setAccount(foundAccount);
+        transaction.setAmount(transactionDTO.getAmount());
+        transaction.setTransactionDate(java.time.LocalDateTime.now());
+        transaction.setBalance(newBalance);
+
+        foundAccount.getTransactions().add(transaction);
+        foundAccount.setBalance(newBalance);
+
+        // Save the transaction
+        transactionRepository.save(transaction);
+        accountRepository.save(foundAccount);
+
+        // Convert the entity to DTO and return
+        return transactionMapper.toDto(transaction);
+    }
 }
